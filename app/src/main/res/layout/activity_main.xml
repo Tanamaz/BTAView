@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <com.navobytes.ui.btaview
+        android:id="@+id/btaView1"
+        android:layout_marginTop="120dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        app:beforeImage="@drawable/before"
+        app:afterImage="@drawable/after"
+        app:lineColor="#FFFFFF"
+        app:lineWidth="1dp"
+        app:roundRadius="90dp"/>
+    <com.navobytes.ui.btaview
+        android:id="@+id/btaView2"
+        android:layout_marginTop="40dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="240dp"
+        android:layout_height="280dp"
+        app:beforeImage="@drawable/before"
+        app:afterImage="@drawable/after"
+        app:lineColor="#FFFFFF"
+        app:lineWidth="1dp"
+        app:roundRadius="25dp"/>
+</LinearLayout>
