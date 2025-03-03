@@ -5,7 +5,7 @@
 
 A powerful Android Before To After comparison view with dynamic animations and multiple display effects.
 
-![Demo GIF](https://github.com/Tanamaz/BTAView/blob/959b8dc30aa6ac87cdefd3254a67620da1e17ac6/gif/demo.gif)
+![Demo GIF](https://github.com/Tanamaz/BTAView/blob/562f11900444a11740f1fa718e04019fc15ac7a6/gif/demo.gif)
 
 ## Features
 
