@@ -48,6 +48,9 @@ class btaview @JvmOverloads constructor(
         )
         annotation class InterpolatorType
     }
+    // 新增属性
+    private var scalePivotX = 0.5f // 默认水平锚点
+    private var scalePivotY = 0.5f // 默认垂直锚点
 
     // 图片资源
     private var beforeBitmap: Bitmap? = null
@@ -63,17 +66,20 @@ class btaview @JvmOverloads constructor(
 
     // 动画控制
     private var animator: ValueAnimator? = null
-    private var progress = 0f
-    private var animationDuration = 1500
+    private var currentProgress = 0f    // 统一进度 0~1
+    private var isForwardDirection = true
+    private var forwardDuration = 1500
+    private var backwardDuration = 1000
+    private var loopInterval = 1500
+    private var maxScaleFactor = 1.0f
+    private var currentScale = 1.0f
     private var autoPlay = true
     private var loopAnimation = true
-    private var loopInterval = 1000
     private var interpolatorType = INTERPOLATOR_ACCELERATE_DECELERATE
 
     // 绘制辅助对象
     private val clipPath = Path()
     private val rectF = RectF()
-    private val afterMatrix = Matrix()
     private val tempRect = RectF()
 
     init {
@@ -85,30 +91,32 @@ class btaview @JvmOverloads constructor(
     private fun initAttributes(attrs: AttributeSet?) {
         attrs ?: return
 
-        context.obtainStyledAttributes(attrs, R.styleable.BTAView).apply {
+        context.obtainStyledAttributes(attrs, R.styleable.btaview).apply {
             try {
                 // 图片资源
-                getResourceId(R.styleable.BTAView_beforeImage, -1).takeIf { it != -1 }?.let {
+                getResourceId(R.styleable.btaview_beforeImage, -1).takeIf { it != -1 }?.let {
                     setBeforeImageResource(it)
                 }
-                getResourceId(R.styleable.BTAView_afterImage, -1).takeIf { it != -1 }?.let {
+                getResourceId(R.styleable.btaview_afterImage, -1).takeIf { it != -1 }?.let {
                     setAfterImageResource(it)
                 }
 
                 // 显示参数
-                scaleType = getInt(R.styleable.BTAView_scaleType, SCALE_TYPE_CENTER_CROP)
-                roundRadius = getDimension(R.styleable.BTAView_roundRadius, 0f)
+                scaleType = getInt(R.styleable.btaview_scaleType, SCALE_TYPE_CENTER_CROP)
+                roundRadius = getDimension(R.styleable.btaview_roundRadius, 0f)
 
                 // 线条样式
-                linePaint.color = getColor(R.styleable.BTAView_lineColor, Color.WHITE)
-                linePaint.strokeWidth = getDimension(R.styleable.BTAView_lineWidth, 2f)
+                linePaint.color = getColor(R.styleable.btaview_lineColor, Color.WHITE)
+                linePaint.strokeWidth = getDimension(R.styleable.btaview_lineWidth, 1f)
 
                 // 动画参数
-                autoPlay = getBoolean(R.styleable.BTAView_autoPlay, true)
-                animationDuration = getInteger(R.styleable.BTAView_duration, 2000)
-                loopAnimation = getBoolean(R.styleable.BTAView_loop, true)
-                loopInterval = getInteger(R.styleable.BTAView_loopInterval, 0)
-                interpolatorType = getInt(R.styleable.BTAView_interpolatorType, INTERPOLATOR_LINEAR)
+                autoPlay = getBoolean(R.styleable.btaview_autoPlay, true)
+                forwardDuration = getInteger(R.styleable.btaview_forwardDuration, 1500)
+                backwardDuration = getInteger(R.styleable.btaview_backwardDuration, 1000)
+                maxScaleFactor = getFloat(R.styleable.btaview_maxScale, 1.0f)
+                loopAnimation = getBoolean(R.styleable.btaview_loop, true)
+                loopInterval = getInteger(R.styleable.btaview_loopInterval, 1500)
+                interpolatorType = getInt(R.styleable.btaview_interpolatorType, INTERPOLATOR_ACCELERATE_DECELERATE)
 
             } finally {
                 recycle()
@@ -118,8 +126,7 @@ class btaview @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         applyRoundCornerClip(canvas)
-        drawStaticBeforeImage(canvas)
-        drawClippedAfterImage(canvas)
+        drawScaledImages(canvas)
         drawMovingLine(canvas)
     }
 
@@ -132,57 +139,95 @@ class btaview @JvmOverloads constructor(
         }
     }
 
-    private fun drawStaticBeforeImage(canvas: Canvas) {
-        beforeBitmap?.let { bitmap ->
-            calculateMatrix(bitmap, afterMatrix)
-            canvas.drawBitmap(bitmap, afterMatrix, null)
+    private fun drawScaledImages(canvas: Canvas) {
+        // 根据方向计算缩放比例
+        currentScale = if (isForwardDirection) {
+            1.0f + (maxScaleFactor - 1.0f) * currentProgress // 放大：1.0 → 1.2
+        } else {
+            maxScaleFactor - (maxScaleFactor - 1.0f) * currentProgress // 缩小：1.2 → 1.0
         }
-    }
 
-    private fun drawClippedAfterImage(canvas: Canvas) {
+        // 绘制底层图片（Before）
+        beforeBitmap?.let { bitmap ->
+            val matrix = createScaledMatrix(bitmap, currentScale)
+            canvas.drawBitmap(bitmap, matrix, null)
+        }
+
+        // 绘制上层裁剪区域（After）
         afterBitmap?.let { bitmap ->
             canvas.save()
-            val clipWidth = width * progress
+            val clipWidth = if (isForwardDirection) {
+                width * currentProgress // 从左到右裁剪
+            } else {
+                width * (1 - currentProgress) // 从右到左裁剪
+            }
             canvas.clipRect(0f, 0f, clipWidth, height.toFloat())
-            calculateMatrix(bitmap, afterMatrix)
-            canvas.drawBitmap(bitmap, afterMatrix, null)
+            val matrix = createScaledMatrix(bitmap, currentScale)
+            canvas.drawBitmap(bitmap, matrix, null)
             canvas.restore()
         }
     }
 
     private fun drawMovingLine(canvas: Canvas) {
-        val lineX = width * progress
+        val epsilon = 0.001f // 边界判定阈值
+        val lineX = if (isForwardDirection) {
+            width * currentProgress
+        } else {
+            width * (1 - currentProgress)
+        }
+
+        // 边界检测（左右各1像素范围内不绘制）
+        if (lineX < epsilon || lineX > width - epsilon) return
+
         canvas.drawLine(lineX, 0f, lineX, height.toFloat(), linePaint)
     }
 
-    private fun calculateMatrix(bitmap: Bitmap, matrix: Matrix) {
+    private fun createScaledMatrix(bitmap: Bitmap, scale: Float): Matrix {
+        val matrix = Matrix()
         val viewWidth = width.toFloat()
         val viewHeight = height.toFloat()
         val bitmapWidth = bitmap.width.toFloat()
         val bitmapHeight = bitmap.height.toFloat()
 
-        matrix.reset()
+        // 计算锚点像素位置
+        val pivotX = bitmapWidth * scalePivotX
+        val pivotY = bitmapHeight * scalePivotY
 
         when (scaleType) {
             SCALE_TYPE_CENTER_CROP -> {
-                val scale = max(viewWidth / bitmapWidth, viewHeight / bitmapHeight)
-                matrix.postScale(scale, scale)
+                val baseScale = max(viewWidth / bitmapWidth, viewHeight / bitmapHeight)
+                matrix.postScale(baseScale * scale, baseScale * scale, pivotX, pivotY)
+
+                // 计算锚点偏移
                 tempRect.set(0f, 0f, bitmapWidth, bitmapHeight)
                 matrix.mapRect(tempRect)
-                matrix.postTranslate(
-                    (viewWidth - tempRect.width()) / 2 - tempRect.left,
-                    (viewHeight - tempRect.height()) / 2 - tempRect.top
-                )
+                val offsetX = (viewWidth * scalePivotX) - (tempRect.left + pivotX * baseScale * scale)
+                val offsetY = (viewHeight * scalePivotY) - (tempRect.top + pivotY * baseScale * scale)
+                matrix.postTranslate(offsetX, offsetY)
             }
             SCALE_TYPE_FIT_CENTER -> {
-                val scale = min(viewWidth / bitmapWidth, viewHeight / bitmapHeight)
-                matrix.postScale(scale, scale)
+                val baseScale = min(viewWidth / bitmapWidth, viewHeight / bitmapHeight)
+                matrix.postScale(baseScale * scale, baseScale * scale, pivotX, pivotY)
+
+                // 保持锚点位置
+                tempRect.set(0f, 0f, bitmapWidth, bitmapHeight)
+                matrix.mapRect(tempRect)
+                val targetX = viewWidth * scalePivotX
+                val targetY = viewHeight * scalePivotY
                 matrix.postTranslate(
-                    (viewWidth - bitmapWidth * scale) / 2,
-                    (viewHeight - bitmapHeight * scale) / 2
+                    targetX - (tempRect.left + pivotX * baseScale * scale),
+                    targetY - (tempRect.top + pivotY * baseScale * scale)
                 )
             }
         }
+        return matrix
+    }
+
+    // 新增公共方法
+    fun setScalePivot(pivotX: Float, pivotY: Float) {
+        scalePivotX = pivotX.coerceIn(0f, 1f)
+        scalePivotY = pivotY.coerceIn(0f, 1f)
+        invalidate()
     }
 
     // 公共API
@@ -211,26 +256,35 @@ class btaview @JvmOverloads constructor(
     // 动画控制
     fun startAnimation() {
         stopAnimation()
+        isForwardDirection = true
+        startPhase()
+    }
 
+    private fun startPhase() {
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = animationDuration.toLong()
+            duration = if (isForwardDirection) forwardDuration.toLong() else backwardDuration.toLong()
             interpolator = getSelectedInterpolator()
-
             addUpdateListener {
-                progress = it.animatedValue as Float
+                currentProgress = it.animatedValue as Float
                 invalidate()
             }
-
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     if (loopAnimation) {
-                        postDelayed({ startAnimation() }, loopInterval.toLong())
+                        if (isForwardDirection) {
+                            // 左到右完成，开始右到左
+                            isForwardDirection = false
+                            startPhase()
+                        } else {
+                            // 右到左完成，等待间隔后开始新循环
+                            postDelayed({
+                                isForwardDirection = true
+                                startPhase()
+                            }, loopInterval.toLong())
+                        }
                     }
                 }
             })
-
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.REVERSE
             start()
         }
     }

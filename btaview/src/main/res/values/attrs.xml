@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="BTAView">
+    <declare-styleable name="btaview">
         <!-- 图片资源 -->
         <attr name="beforeImage" format="reference"/>
         <attr name="afterImage" format="reference"/>
@@ -26,5 +26,12 @@
             <enum name="decelerate" value="2"/>
             <enum name="accelerateDecelerate" value="3"/>
         </attr>
+        <!-- 新增缩放控制属性 -->
+        <attr name="maxScale" format="float" />
+        <attr name="forwardDuration" format="integer" />
+        <attr name="backwardDuration" format="integer" />
+        <!-- 新增锚点属性 -->
+        <attr name="scalePivotX" format="float" />
+        <attr name="scalePivotY" format="float" />
     </declare-styleable>
 </resources>

@@ -41,7 +41,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Tanamaz" // 改为你的GitHub用户名
                 artifactId = "btaview" // 项目名称
-                version = "1.0.0" // 初始版本号
+                version = "1.0.1" // 版本号
             }
         }
     }

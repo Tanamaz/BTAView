@@ -1,9 +1,9 @@
-# BTAViewDemo
+# BTAView
 
 [![JitPack](https://jitpack.io/v/Tanamaz/BTAView.svg)](https://jitpack.io/#Tanamaz/BTAView)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A powerful Android Before/After comparison view with dynamic animations and multiple display effects.
+A powerful Android Before To After comparison view with dynamic animations and multiple display effects.
 
 ![Demo GIF](https://github.com/Tanamaz/BTAView/blob/959b8dc30aa6ac87cdefd3254a67620da1e17ac6/gif/demo.gif)
 
@@ -11,6 +11,7 @@ A powerful Android Before/After comparison view with dynamic animations and mult
 
 - 🎭 Smooth swipe comparison animation
 - ⚡ 4 animation curves (Linear/Accelerate/Decelerate/AccelerateDecelerate)
+- 🔍 Support for zoomed-in details
 - 🖼️ Smart image scaling (centerCrop/fitCenter)
 - 🔧 Full customization: corner radius, divider color/width
 - 🔄 Auto-loop playback control
@@ -27,20 +28,20 @@ allprojects {
 }
 
 dependencies {
-    implementation 'com.github.Tanamaz:BTAView:1.0.0'
+    implementation 'com.github.Tanamaz:BTAView:1.0.1'
 }
 ```
 
 ### Basic Usage
 ```xml
-    <com.navobytes.ui.btaview
+   <com.navobytes.ui.btaview
         android:id="@+id/btaView1"
         android:layout_marginTop="120dp"
         android:layout_gravity="center_horizontal"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        app:beforeImage="@drawable/before"
-        app:afterImage="@drawable/after"
+        app:beforeImage="@drawable/before_1"
+        app:afterImage="@drawable/after_1"
         app:lineColor="#FFFFFF"
         app:lineWidth="1dp"
         app:roundRadius="90dp"/>
@@ -54,7 +55,12 @@ dependencies {
         app:afterImage="@drawable/after"
         app:lineColor="#FFFFFF"
         app:lineWidth="1dp"
-        app:roundRadius="25dp"/>
+        app:roundRadius="25dp"
+        app:forwardDuration="1500"
+        app:backwardDuration="1000"
+        app:maxScale="1.5"
+        app:loopInterval="1500"
+        app:interpolatorType="accelerate" />
 ```
 
 ### Code Control
@@ -77,19 +83,21 @@ btaView.setRoundRadius(16f)
 
 ## Full Attributes
 
-| XML Attribute     | Type      | Default    | Description               |
-| ----------------- | --------- | ---------- | ------------------------- |
-| beforeImage       | reference | -          | Front image resource      |
-| afterImage        | reference | -          | Back image resource       |
-| animationDuration | integer   | 2000       | Single-pass duration (ms) |
-| roundRadius       | dimension | 0dp        | View corner radius        |
-| lineColor         | color     | #FFFFFF    | Divider color             |
-| lineWidth         | dimension | 2dp        | Divider width             |
-| autoPlay          | boolean   | true       | Auto-play animation       |
-| loop              | boolean   | true       | Loop animation            |
-| loopInterval      | integer   | 0          | Loop interval (ms)        |
-| interpolatorType  | enum      | linear     | Animation curve type      |
-| scaleType         | enum      | centerCrop | Image scaling mode        |
+| XML Attribute    | Type      | Default               | Description          |
+| ---------------- | --------- | --------------------- | -------------------- |
+| beforeImage      | reference | -                     | Front image resource |
+| afterImage       | reference | -                     | Back image resource  |
+| scaleType        | enum      | centerCrop            | Image scaling mode   |
+| roundRadius      | dimension | 0dp                   | View corner radius   |
+| lineColor        | color     | #FFFFFF               | Divider color        |
+| lineWidth        | dimension | 1dp                   | Divider width        |
+| autoPlay         | boolean   | true                  | Auto-play animation  |
+| loop             | boolean   | true                  | Loop animation       |
+| loopInterval     | integer   | 1500                  | Loop interval (ms)   |
+| interpolatorType | enum      | accelerate decelerate | Animation curve type |
+| forwardDuration  | integer   | 1500                  | duration (ms)        |
+| backwardDuration | integer   | 1000                  | duration (ms)        |
+| maxScale         | float     | 1.0                   | No zoom by default   |
 
 ## Advanced Features
 

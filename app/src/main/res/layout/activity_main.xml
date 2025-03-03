@@ -12,8 +12,8 @@
         android:layout_gravity="center_horizontal"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        app:beforeImage="@drawable/before"
-        app:afterImage="@drawable/after"
+        app:beforeImage="@drawable/before_1"
+        app:afterImage="@drawable/after_1"
         app:lineColor="#FFFFFF"
         app:lineWidth="1dp"
         app:roundRadius="90dp"/>
@@ -27,5 +27,11 @@
         app:afterImage="@drawable/after"
         app:lineColor="#FFFFFF"
         app:lineWidth="1dp"
-        app:roundRadius="25dp"/>
+        app:roundRadius="25dp"
+        app:forwardDuration="1500"
+        app:backwardDuration="1000"
+        app:maxScale="1.5"
+        app:loopInterval="1500"
+        app:interpolatorType="accelerate" />
+
 </LinearLayout>
